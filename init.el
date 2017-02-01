@@ -1,3 +1,5 @@
+(setq gc-cons-threshold 100000000)
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (package-initialize)
@@ -11,9 +13,58 @@
 ;;perl
 (defalias 'perl-mode 'cperl-mode)
 
+;;python
+(require 'flycheck-pyflakes)
+(add-hook 'python-mode-hook 'flycheck-mode)
+
+;;rust
+(global-company-mode)
+(setq company-idle-delay 0.2)
+(setq company-minimum-prefix-length 1)
+(if (eq system-type 'windows-nt)
+    (progn
+        (setq racer-cmd "C:\\cygwin64\\home\\lexchou\\.cargo\\bin\\racer.exe")
+        (setq racer-rust-src-path "d:\\Libraries\\rust-master\\src")
+  )
+)
+(if (eq system-type 'darwin)
+    (progn
+        (setq racer-cmd (expand-file-name "~/.cargo/bin/racer"))
+        (setq racer-rust-src-path (expand-file-name "~/.rust/src"))
+      )
+)
+
+(add-hook 'rust-mode-hook #'racer-mode)
+(add-hook 'racer-mode-hook #'eldoc-mode)
+(add-hook 'racer-mode-hook #'company-mode)
+(setq company-tooltip-align-annotations t)
+
+
+;; Setting up configurations when you load rust-mode
+(add-hook 'rust-mode-hook
+     (lambda ()
+     ;; Enable racer
+     (racer-mode)
+     ;; Use flycheck-rust in rust-mode
+     (add-hook 'flycheck-mode-hook #'flycheck-rust-setup)
+     ;; Use company-racer in rust mode
+     (set (make-local-variable 'company-backends) '(company-racer))
+     ;; Key binding to jump to method definition
+     (local-set-key (kbd "M-.") #'racer-find-definition)
+     ;; Key binding to auto complete and indent
+     (local-set-key (kbd "TAB") #'racer-complete-or-indent)))
+
+
+;;sql
+(add-hook 'sql-interactive-mode-hook
+          (lambda ()
+            (toggle-truncate-lines t)))
+
 
 ;;helm and helm-gtags
 (helm-mode 1)
+(global-set-key (kbd "M-x") 'helm-M-x)
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
 (setenv "GTAGSLIBPATH" "~/project/.gtags/")
 (add-to-list 'helm-sources-using-default-as-input 'helm-source-man-pages)
@@ -33,6 +84,7 @@
 (add-hook 'c-mode-hook 'helm-gtags-mode)
 (add-hook 'c++-mode-hook 'helm-gtags-mode)
 (add-hook 'asm-mode-hook 'helm-gtags-mode)
+(add-hook 'python-mode-hook 'helm-gtags-mode)
 
 (define-key helm-gtags-mode-map (kbd "C-c g a") 'helm-gtags-tags-in-this-function)
 (define-key helm-gtags-mode-map (kbd "C-c g s") 'helm-gtags-select)
@@ -60,6 +112,8 @@
 ;(add-to-list 'load-path "~/.emacs.d/evil") ; only without ELPA/el-get
 ;(require 'evil)
 (evil-mode 1)
+(evil-set-initial-state 'term-mode 'emacs)
+(evil-set-initial-state 'eshell-mode 'emacs)
 
 ;;sil mode
 (add-to-list 'load-path "~/.emacs.d/sil-mode")
@@ -69,7 +123,10 @@
 (add-to-list 'load-path "~/.emacs.d/color-theme-6.6.0")
 (require 'color-theme)
 (color-theme-initialize)
-(color-theme-clarity)
+;(color-theme-arjen)
+(color-theme-charcoal-black)
+;;(color-theme-billw)
+;;(color-theme-black-on-gray)
 (require 'rainbow-identifiers)
 (add-hook 'prog-mode-hook 'rainbow-identifiers-mode)
 
@@ -79,7 +136,7 @@
     indent-tabs-mode nil
     tab-width 4
     c-basic-offset 4)
-(set-default-font "Monaco-14")
+;(set-default-font "Monaco-14")
 
 
 
@@ -166,13 +223,29 @@
  '(irony-additional-clang-options
    (quote
     ("-I/usr/local/include" "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/../lib/clang/6.1.0/include" "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include" "-I/usr/include" "-I~/project/swallow/swallow/includes")))
+ '(package-selected-packages
+   (quote
+    (company-racer racer flycheck-rust rust-mode rustfmt lua-mode racket-mode yatemplate yaml-mode w3m utop tuareg term+ swift-mode sr-speedbar rainbow-identifiers rainbow-delimiters rainbow-blocks projectile-speedbar powerline-evil pos-tip php-mode perl-completion org-projectile org-ac org nginx-mode names markdown-toc markdown-mode+ llvm-mode iedit helm-projectile helm-perldoc helm-gtags helm-git helm-company graphviz-dot-mode google-c-style glsl-mode git-gutter git gh-md flymake-yaml flymake-shell flymake-php flymake-google-cpplint flymake-cursor flycheck-pyflakes flycheck-ocaml evil-smartparens epc dash-at-point css-eldoc csharp-mode cperl-mode company-irony company-c-headers cmake-font-lock auto-complete-c-headers)))
  '(safe-local-variable-values
    (quote
-    ((company-c-headers-path-system "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "/usr/include" "~/project/swallow/swallow/includes")
-     (company-clang-arguments "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "-I/usr/include" "-I~/project/swallow/swallow/includes")))))
+    ((company-c-headers-path-system "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "/usr/include" "/Users/lexchou/project/swallow/swallow/includes")
+     (company-c-headers-path-system "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "/usr/include" "~/project/swallow/swallow/includes")
+     (company-clang-arguments "-I/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "-I/usr/include" "-I~/project/swallow/swallow/includes"))))
+ '(sql-postgres-login-params
+   (quote
+    ((user :default "lexchou")
+     password
+     (server :default "10.0.0.1")
+     (database :default "lexchou"))))
+ '(tool-bar-mode nil)
+ '(tuareg-default-indent 4)
+ '(tuareg-do-indent 4)
+ '(tuareg-let-indent 4))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(default ((t (:family "Source Code Pro" :foundry "adobe" :slant normal :weight normal :height 120 :width normal)))))
+
+
